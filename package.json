@@ -1,0 +1,22 @@
+{
+  "name": "clips",
+  "version": "0.0.1",
+  "dependencies": {
+    "@huggingface/transformers": "^3.4.1",
+    "onnxruntime-node": "^1.21.0",
+    "onnxruntime-web": "^1.21.0",
+    "papaparse": "^5.5.2"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "devDependencies": {
+    "@rollup-extras/plugin-copy": "^1.11.0",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "esbuild": "^0.25.2",
+    "rollup": "^4.39.0"
+  }
+}

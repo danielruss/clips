@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <script type="module">
+            import { configureClips,runClipsPipeline } from "./dist/browser/clips.js";
+
+            console.log("in test_script....")
+            await configureClips();
+            let data=[
+                {products_services:"Hosptial care",sic1987:"8062",bazinga:"My boy elroy"},
+                {products_services:"women's clothes",sic1987:"5621",bazinga:"Spain Rain"}
+            ]
+            let res = await runClipsPipeline(data)
+            console.log(res)
+        </script>
+    </body>
+</html>
