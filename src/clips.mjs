@@ -1,6 +1,6 @@
 import {embedData,init as pipelineInit} from './embed.mjs'
 import { cacheCrosswalk, crosswalk } from './crosswalk.mjs';
-import { device,getOnnxRuntime } from './env.js';
+import { device, ort } from './env.js';
 
 let pipelineData = {
     "0.0.2": {
@@ -38,7 +38,7 @@ export async function runClipsPipeline(data){
     // Step 2. Feature Extraction:
     let embeded_ps = await embedData(data)
 
-    let ort = await getOnnxRuntime();
+    // const ort = await getOnnxRuntime()
     const embedding_tensor = new ort.Tensor('float32',embeded_ps.data, embeded_ps.dims);
 
     // Step 3. Handle the crosswalking (naics2022 has 689 5-digit codes.)
