@@ -23,8 +23,10 @@ export async function embed_text(text) {
     return await embedder(text,embeddingConfig)
 }
 
-export async function embedData(data){
-    let listOfPs = data.map( job => job.products_services )
-    let emb = await embed_text(listOfPs)
+export async function embedData(textArray){
+    if (!Array.isArray(textArray)) {
+        throw new Error(`In embedData: expect an array of text to embed.`)
+    }
+    let emb = await embed_text(textArray)
     return emb
 }

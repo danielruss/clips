@@ -1,109 +1,186 @@
-const knownCrosswalks = new Map([
+const baseURL="https://danielruss.github.io/codingsystems"
+const knownCodingSystemInfo = new Map([
+    ["soc2010",{url:`${baseURL}/soc2010_all.json`,level:6,filter:{key:"soc2d",value:"99-0000"}}],
+    ["naics2022",{url:`${baseURL}/naics2022_all.json`,level:5,filter:{key:"naics2d",value:"99"}}]
+])
+
+
+const knownCrosswalkURLs = new Map([
     ["soc2010", new Map([
-        ["soc1980", "https://danielruss.github.io/codingsystems/soc1980_soc2010.json"],
-        ["noc2011", "https://danielruss.github.io/codingsystems/noc2011_soc2010_via_soc2018.json"],
-        ["isco1988", "https://danielruss.github.io/codingsystems/isco1988_soc2010.json"]
+        ["soc1980", `${baseURL}/soc1980_soc2010.json`],
+        ["noc2011", `${baseURL}/noc2011_soc2010_via_soc2018.json`],
+        ["isco1988", `${baseURL}/isco1988_soc2010.json`]
     ])],
     ["naics2022", new Map([
-        ["sic1987", "https://danielruss.github.io/codingsystems/sic1987_naics2022_5d.json"]
+        ["sic1987", `${baseURL}/sic1987_naics2022_5d.json`]
     ])]
 ])
 
-const cachedCrosswalk = new Map()
-const codingSystemInfo = new Map()
 
-export async function cacheCrosswalk(toCodingSystem){
-    // get all coding system to soc2010 or naic2022
-    let map = knownCrosswalks.get(toCodingSystem);
-    if (!map) return;
+export class CodingSystem{
+    static cachedCodingSystems = new Map();
 
-
-
-    // get - or create - a map of all the codingsystems
-    // that already have a crosswalk to "toCodingSystem"
-    if (!cachedCrosswalk.has(toCodingSystem)){
-        cachedCrosswalk.set(toCodingSystem,new Map())
-    }
-    let currentCrosswalks=cachedCrosswalk.get(toCodingSystem)
-
-    // for each knownCrosswalk, cache it in the currentCrosswalk map...
-    let promises = map.entries().map( async ([fromCodingSystem,url]) => {
-        let xw=await buildCrossWalk(url,fromCodingSystem,toCodingSystem);
-        console.log(`cacheing crosswalk ${fromCodingSystem} => ${toCodingSystem}`)
-        currentCrosswalks.set(fromCodingSystem,xw)
-    })
-    await Promise.all(promises);
-    console.log("... finished caching crosswalks ...")
-}
-function availableCrosswalks(toCodingSystem){
-    if (!knownCrosswalks.has(toCodingSystem)){
-        return []
-    }
-    return Array.from(knownCrosswalks.get(toCodingSystem).keys())
-}
-
-async function buildCrossWalk(url, fromSystem, toSystem) {
-    const raw = await (await fetch(url)).json()
-    let toCodes = raw.reduce( (acc,current) => {
-        acc.add(current[toSystem]);
-        return acc
-    },new Set());
-    toCodes = Array.from(toCodes).sort()
-    
-
-    toCodes = toCodes.reduce((acc,currentValue,currentIndex)=>{
-        acc.set(currentValue,{index:currentIndex,code:currentValue});
-        return acc
-    },new Map());
-
-    // if we have not already added the cs info, do so now...
-    if (!codingSystemInfo.has(toSystem)){
-        codingSystemInfo.set(toSystem,{fromCodingSystems:[],number_of_codes:toCodes.size})
-    }
-    let currentCodingSystemInfo = codingSystemInfo.get(toSystem)
-    currentCodingSystemInfo.fromCodingSystems.push(fromSystem);
-    if (currentCodingSystemInfo.number_of_codes != toCodes.size) {
-        throw new Error(`The crosswalks have different number of codes. Expected: ${currentCodingSystemInfo.number_of_codes} Received (${fromSystem}=>${toSystem}): ${toCodes.length}`)
-    }
-    
-    const xw = raw.reduce((acc, current) => {
-        if (!acc.has(current[fromSystem])) {
-          acc.set(current[fromSystem], [])
+    static async loadCodingSystem(system){
+        if (CodingSystem.cachedCodingSystems.has(system)) {
+            return CodingSystem.cachedCodingSystems.get(system)
         }
-        acc.get(current[fromSystem]).push(toCodes.get(current[toSystem]))
-        return acc;
-    }, new Map())
+        if (!knownCodingSystemInfo.has(system)) {
+            throw new Error(`Unknown coding system: ${system} `)
+        }
+        let info = knownCodingSystemInfo.get(system)
+        let codes  = await (await fetch(info.url)).json()
+        codes = codes.filter((code)=> (code.Level == info.level) && (code[info.filter.key] != info.filter.value) )
+        let codeMap = codes.reduce( (acc,code,indx)=>{
+            acc.set(code.code,indx)
+            return acc
+        },new Map() )
 
-     return xw
-}
+        let codingSystem = new CodingSystem(codes,codeMap,system,codes.length);
+        CodingSystem.cachedCodingSystems.set(system,codingSystem)
 
-
-export function crosswalk(data,toCodingSystem,ncodes){
-    if (!Array.isArray(data)) {throw new Exception("data must be an array to crosswalk")}
-    if (data.length==0) {throw new Exception("empty data passed to crosswalk")};
-
-    // build the return buffer...
-    const calcIndex = (row, col) => row * ncodes + col
-    let buffer = {
-        data: new Float32Array(data.length * ncodes),
-        dims: [data.length, ncodes]
+        return codingSystem
     }
 
-    // get the crosswalks, and all columns that must be crosswalked
-    let xwalks = cachedCrosswalk.get(toCodingSystem)
-    let crosswalkableColumns = Object.keys(data[0]).filter( k => xwalks.has(k))
+    constructor(codes,codeMap,name,numberOfCodes){
+        this.codes=codes;
+        this.codeMap=codeMap;
+        this.name=name;
+        this.numberOfCodes=numberOfCodes
+    }
 
-    // for each column, crosswalk all jobs...
-    crosswalkableColumns.forEach( fromCS =>{
-        let xw = xwalks.get(fromCS);
-        data.forEach((datarow,rowIndex) => {
-            console.log(`${fromCS}: ${datarow[fromCS]} -> ${toCodingSystem}: ${xw.get(datarow[fromCS])?.map(x=>x.index)??[]}`);
-            let indices = xw.get(datarow[fromCS])?.map(x=>x.index)??[]
-            let buffer_indices = indices.map((i)=> calcIndex(rowIndex,i))
-            console.log(buffer_indices);
-            indices.forEach((i)=> buffer.data[calcIndex(rowIndex,i)]=1)
+    isCached() {
+        return CodingSystem.cachedCodingSystems.has(this.name)
+    }
+
+    toIndices(codes){
+        const result = [];
+        for (let item of codes){
+            if (Array.isArray(item)){
+                result.push(this.toIndices(item))
+            } else{
+                result.push(this.codeMap.get(item))
+            }
+        }
+        return result
+    }
+    fromIndices(indices){
+        const result = [];
+        for (let indx of indices){
+            if (Array.isArray(indx)){
+                result.push(this.fromIndices(indx) )
+            } else{
+                result.push(this.codes[indx] )
+            }
+        }
+        return result
+    }
+
+    createBuffer(nrows){
+        let buffer = new Float32Array(nrows*this.numberOfCodes);
+        buffer.dims = [nrows,this.numberOfCodes]
+        return buffer;
+    }
+
+    calcIndex(row, col){
+        return row * this.numberOfCodes + col
+    }
+
+    // i have to pass in the buffer because I may
+    // crosswalk from multiple coding systems. (I think.)
+    multiHotEncode(buffer,codes){
+        let indices=this.toIndices(codes);
+        for (let row=0;row<indices.length;row++){
+            for (let col=0;col<indices[row].length;col++){
+                buffer[this.calcIndex(row,indices[row][col])] = 1;
+            }
+        }
+        //console.log(indices)
+        return buffer
+    }
+}
+
+export class Crosswalk {
+    static cachedCrosswalks = new Map();
+    
+    static async loadCrosswalk(from,to){
+        if (Crosswalk.cachedCrosswalks.has(`${from}->${to}`)){
+            return Crosswalk.cachedCrosswalks.get(`${from}->${to}`);
+        }
+        
+        if (!knownCrosswalkURLs.has(to)) {
+            throw new Error(`No Crosswalks to ${to} `)
+        }
+        let toMap = knownCrosswalkURLs.get(to)
+        if (!toMap.has(from)) {
+            throw new Error(`No Crosswalks from ${from} to ${to} `)
+        }
+        let url = toMap.get(from);
+        let xw_data  = await (await fetch(url)).json()
+        let crosswalk = xw_data.reduce( (acc,cv) => {
+            if (!acc.has(cv[from].toString())) {
+                acc.set(cv[from].toString(),[])
+            }
+            acc.get(cv[from].toString()).push(cv[to].toString())
+            return acc
+        },new Map() )
+
+        let xw = new Crosswalk(crosswalk,from,to)
+        xw.cs = await CodingSystem.loadCodingSystem(to)
+        xw.n = xw.cs.numberOfCodes;
+
+        Crosswalk.cachedCrosswalks.set(`${xw.from}->${xw.to}`,xw)
+        return xw;
+    }
+
+    constructor(xw,from,to){
+        this.crosswalk=xw;
+        this.from=from;
+        this.to=to;
+    }
+
+    isCached() {
+        return Crosswalk.cachedCrosswalks.has(`${this.from}->${this.to}`)
+    }
+
+    calcIndex(row,index){
+        row*this.n+index;
+    }
+
+    createBuffer(nrows){
+        return this.cs.createBuffer(nrows);
+    }
+
+    bufferedCrosswalk(codes,buffer){
+        if (!Array.isArray(codes)){
+            codes=[codes]
+        }
+
+        // each codes is row...
+        let xw_codes=[];
+        codes.forEach( (c,row)=>{            
+            // if the current row is an array 
+            // crosswalk each code in the array
+            if (Array.isArray(c)){
+                c.forEach( (c1)=>{
+                    xw_codes.push(this.crosswalk.get(c1)??[])
+                })
+                xw_codes.flat()
+            }else{
+                c = c.toString();
+                xw_codes.push( this.crosswalk.get(c)??[] )
+            }
         })
-    });
-
-    return buffer
+        this.cs.multiHotEncode(buffer,xw_codes)
+    }
+    crosswalkCodes(codes) {
+        if (!Array.isArray(codes)){
+            codes = [codes]
+        }
+        let res = codes.reduce( (acc,pv)=> {
+                acc.push(this.crosswalk.get(pv.toString()))
+                return acc.flat();
+            },[])
+        res=Array.from( new Set(res) ).sort()
+        return res;
+    }
 }

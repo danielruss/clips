@@ -1,6 +1,9 @@
 import {embedData,init as pipelineInit} from './embed.mjs'
-import { cacheCrosswalk, crosswalk } from './crosswalk.mjs';
+import { Crosswalk, CodingSystem } from './crosswalk.mjs';
 import { device, ort } from './env.js';
+
+export {Crosswalk, CodingSystem}
+
 
 let pipelineData = {
     "0.0.2": {
@@ -16,34 +19,29 @@ let pipelineData = {
     }
 }
 
-
 let current_config=null;
 export async function configureClips(version="0.0.2"){
     current_config = pipelineData['0.0.2'];
     console.log(`configure_clips: ${JSON.stringify(current_config)}`)
     await pipelineInit(current_config)
-    await cacheCrosswalk("naics2022")
 }
-
-
-
 
 // the data is a json array where each line 
 // has {products_services:"",sic1987:""} There can be unused keys.
-export async function runClipsPipeline(data){
+export async function runClipsPipeline(data,{n=10}={}){
     if (!data) throw new Error("No data to classify");
     // Step 1. check the data
     data = cleanData(data)
     console.log(JSON.stringify(data,null,3))
-    // Step 2. Feature Extraction:
-    let embeded_ps = await embedData(data)
 
-    // const ort = await getOnnxRuntime()
+    // Step 2. Feature Extraction:
+    let embeded_ps = await embedData(data.products_services)
     const embedding_tensor = new ort.Tensor('float32',embeded_ps.data, embeded_ps.dims);
 
     // Step 3. Handle the crosswalking (naics2022 has 689 5-digit codes.)
-    let crosswalk_input = crosswalk(data,"naics2022",689);
-    const crosswalk_tensor = new ort.Tensor('float32',crosswalk_input.data, crosswalk_input.dims);
+    let sic1987_naics2022 = await Crosswalk.loadCrosswalk("sic1987","naics2022")
+    let crosswalk_buffer = sic1987_naics2022.createBuffer(data.length)
+    const crosswalk_tensor = new ort.Tensor('float32',crosswalk_buffer, crosswalk_buffer.dims);
 
     // Step 4. load the onnx model
     let current_model = current_config.model_url;
@@ -54,25 +52,36 @@ export async function runClipsPipeline(data){
     }
     // Step 5. run the onnx model
     let results = await session.run(feeds);
+
     // Step 6. process the results.
     results = onnxResultToArray(results.naics2022_out)
 
-    console.log(results)
-    return data
+    // Step 7. get top N results...
+    let naics2022 = await CodingSystem.loadCodingSystem('naics2022')
+    results=results.map( (job)=>topK(job,n,naics2022) )
+
+    return results
 }
 
 function cleanData(data){
     if (!Array.isArray(data)) data=[data];
     let npad=  Math.floor(Math.log10(data.length));
+    let keys = Object.keys(data[0])
+    let initial_object = keys.reduce( (obj,key) => {obj[key]=[];return obj},{})
 
-    return data.map( (job,indx) => {
-        // make sure the job has an id...
-        job.Id=job.Id??`clips-res${Number(indx+1).toString().padStart(npad,"0")}`
-        // convert to lower case
-        job.products_services=job.products_services.toLowerCase()
+    // transpose the data to a column array.
+    let cleanedData =  data.reduce( (acc,cv,indx)=>{
+        keys.forEach(k => acc[k].push(cv[k]))
+        acc.length = indx+1
+        return acc
+    },initial_object)
 
-        return job
-    })
+    if (!Object.hasOwn(cleanedData,"Id")){
+        cleanedData['Id'] = Array.from({length:cleanedData.length},(_,indx)=>`row-${Number(indx+1).toString().padStart(npad,"0")}`)
+    }
+    cleanedData['products_services'] = cleanedData['products_services'].map( ps => ps.toLowerCase())
+
+    return cleanedData;
 }
 
 function onnxResultToArray(tensor) {
@@ -81,4 +90,26 @@ function onnxResultToArray(tensor) {
     const data = Array.from(tensor.cpuData);
 
     return Array.from({ length: rows }, (_, i) => data.slice(i * cols, i * cols + cols));
+}
+
+function topK(arr, k, codingSystem) {
+    // Set k to the length of the array if k is greater than the array length
+    k = Math.min(k, arr.length)
+
+    // Create an array of indices and sort it based on the values in arr
+    const indices = Array.from(arr.keys()).sort((a, b) => arr[b] - arr[a]);
+
+    // Get the top k values and their indices
+    const topIndices = indices.slice(0, k);
+    const topValues = topIndices.map(i => arr[i]);
+
+    const topObjects = codingSystem.fromIndices(topIndices)
+    const {topCodes,topLabels} = topObjects.reduce( (acc,cv) =>{
+        acc['topCodes'].push(cv.code)
+        acc['topLabels'].push(cv.title)
+        return acc
+    },{topCodes:[],topLabels:[]})
+
+
+    return { naics2022: topCodes, title: topLabels, score: topValues };
 }
