@@ -8,13 +8,15 @@ export {Crosswalk, CodingSystem}
 let pipelineData = {
     "0.0.2": {
         model: "Xenova/GIST-small-Embedding-v0",
-        model_url: "./clips_v0.0.2.onnx",
+        model_url: `${import.meta.dirname}/../../models/clips_v0.0.2.onnx`,
         config: {
             dtype: "fp32",
+            quantized: false,
             device: device,
         },
         embeddingConfig: {
-            pooling: "cls"
+            pooling: "cls",
+            normalize: true,
         }
     }
 }
@@ -41,6 +43,9 @@ export async function runClipsPipeline(data,{n=10}={}){
     // Step 3. Handle the crosswalking (naics2022 has 689 5-digit codes.)
     let sic1987_naics2022 = await Crosswalk.loadCrosswalk("sic1987","naics2022")
     let crosswalk_buffer = sic1987_naics2022.createBuffer(data.length)
+    if (Object.hasOwn(data,"sic1987")){
+        sic1987_naics2022.bufferedCrosswalk(data['sic1987'],crosswalk_buffer)
+    }
     const crosswalk_tensor = new ort.Tensor('float32',crosswalk_buffer, crosswalk_buffer.dims);
 
     // Step 4. load the onnx model

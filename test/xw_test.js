@@ -114,8 +114,15 @@ describe("Crosswalk Tests",()=>{
 
         window.buffer=buffer
     }),
-    it('should cleanly handle bad codes to crosswalk',()=>{
-        
+    it('should cleanly handle code 7631',async function(){
+        let sic1987_naics2022 = await Crosswalk.loadCrosswalk("sic1987","naics2022")
+        let data = ['7631','7631']
+        let buffer = sic1987_naics2022.createBuffer(data.length);
+        sic1987_naics2022.bufferedCrosswalk(data,buffer);
+        assert.equal(buffer[365],1);
+        assert.equal(buffer[638],1);
+        assert.equal(buffer[689+365],1)
+        assert.equal(buffer[689+638],1)
     })
 })
 mocha.run();
