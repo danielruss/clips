@@ -8,7 +8,7 @@ export {Crosswalk, CodingSystem}
 let pipelineData = {
     "0.0.2": {
         model: "Xenova/GIST-small-Embedding-v0",
-        model_url: `${import.meta.dirname}/../../models/clips_v0.0.2.onnx`,
+        model_url: `https://danielruss.github.io/soccer-models/clips_v0.0.2.onnx`,
         config: {
             dtype: "fp32",
             quantized: false,
@@ -50,6 +50,7 @@ export async function runClipsPipeline(data,{n=10}={}){
 
     // Step 4. load the onnx model
     let current_model = current_config.model_url;
+    current_model = await (await fetch(current_model)).arrayBuffer()
     const session= await ort.InferenceSession.create(current_model,{executionProviders: [device] })
     const feeds = {
         embedded_input: embedding_tensor,
