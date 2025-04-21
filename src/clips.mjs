@@ -1,9 +1,10 @@
 import {embedData,init as pipelineInit} from './embed.mjs'
 import { Crosswalk, CodingSystem } from './crosswalk.mjs';
 import { device, ort } from './env.js';
+import { read_csv } from './io.mjs';
 
 export {Crosswalk, CodingSystem}
-
+export {read_csv}
 
 let pipelineData = {
     "0.0.2": {

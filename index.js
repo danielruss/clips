@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 
-import { configureClips,runClipsPipeline } from "./dist/node/clips.js";
-import { read_csv } from "./src/io.mjs";
+import { read_csv,configureClips,runClipsPipeline } from "./dist/node/clips.js";
 
 await configureClips()
 
