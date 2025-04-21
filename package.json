@@ -1,5 +1,5 @@
 {
-  "name": "clips",
+  "name": "@danielruss/clips",
   "version": "0.0.1",
   "dependencies": {
     "@huggingface/transformers": "^3.4.1",
