@@ -1,10 +1,10 @@
 import {embedData,init as pipelineInit} from './embed.mjs'
 import { Crosswalk, CodingSystem } from './crosswalk.mjs';
 import { device, ort } from './env.js';
-import { read_csv } from './io.mjs';
+import { read_csv, read_excel, download_excel, download_csv } from './io.mjs';
 
 export {Crosswalk, CodingSystem}
-export {read_csv}
+export {read_csv, read_excel, download_excel, download_csv}
 
 let pipelineData = {
     "0.0.2": {
@@ -31,11 +31,11 @@ export async function configureClips(version="0.0.2"){
 
 // the data is a json array where each line 
 // has {products_services:"",sic1987:""} There can be unused keys.
-export async function runClipsPipeline(data,{n=10}={}){
-    if (!data) throw new Error("No data to classify");
+export async function runClipsPipeline(input_data,{n=10}={}){
+    if (!input_data) throw new Error("No data to classify");
+ 
     // Step 1. check the data
-    data = cleanData(data)
-    console.log(JSON.stringify(data,null,3))
+    let {data,fields} = cleanData(input_data)
 
     // Step 2. Feature Extraction:
     let embeded_ps = await embedData(data.products_services)
@@ -67,18 +67,32 @@ export async function runClipsPipeline(data,{n=10}={}){
     let naics2022 = await CodingSystem.loadCodingSystem('naics2022')
     results=results.map( (job)=>topK(job,n,naics2022) )
 
+    // Step 8. add the input data to the results
+    results.input_fields = fields
+    results.map( (res,index) => {
+        fields.forEach(key => res[key]=data[key][index] )
+        return res
+    })
+
     return results
 }
 
 function cleanData(data){
-    if (!Array.isArray(data)) data=[data];
+    let fields;
+
+    if ( Object.hasOwn(data,"data") && Object.hasOwn(data,"meta") && Object.hasOwn(data.meta,"fields")){
+        fields = data.meta.fields
+        data = data.data;
+    } else {
+        if (!Array.isArray(data)) data=[data];
+        fields = Object.keys(data[0])
+    }
     let npad=  Math.floor(Math.log10(data.length));
-    let keys = Object.keys(data[0])
-    let initial_object = keys.reduce( (obj,key) => {obj[key]=[];return obj},{})
+    let initial_object = fields.reduce( (obj,key) => {obj[key]=[];return obj},{})
 
     // transpose the data to a column array.
     let cleanedData =  data.reduce( (acc,cv,indx)=>{
-        keys.forEach(k => acc[k].push(cv[k]))
+        fields.forEach(k => acc[k].push(cv[k]??''))
         acc.length = indx+1
         return acc
     },initial_object)
@@ -88,11 +102,10 @@ function cleanData(data){
     }
     cleanedData['products_services'] = cleanedData['products_services'].map( ps => ps.toLowerCase())
 
-    return cleanedData;
+    return {data:cleanedData,fields};
 }
 
 function onnxResultToArray(tensor) {
-    console.log(tensor)
     const [rows, cols] = tensor.dims;
     const data = Array.from(tensor.cpuData);
 

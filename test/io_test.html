@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <title>Clips IO Mocha Tests</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
+
+    <style>
+        table {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: x-small;
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        tr:nth-child(odd){
+            background-color: #777777;
+            color: black;
+        }
+        tr:nth-child(even){
+            background-color: #f2f2f2;
+            color: black;
+        }
+    }
+    </style>
+</head>
+
+<body>  
+    <div id="mocha"></div>
+    <script type="module" src="./io_test.js"></script>
+
+    <div id="resTableDiv">
+        <table id="xlTable"></table>
+    </div>
+    <div style="height: 30px;"></div>
+    <div>
+        <table id="csvTable"></table>
+    </div>
+</body>
+
+</html>

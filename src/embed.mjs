@@ -19,7 +19,6 @@ export async function embed_text(text) {
     }
 
     // return the embeddings...
-    console.log(embeddingConfig,text)
     return await embedder(text,embeddingConfig)
 }
 
