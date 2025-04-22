@@ -10,6 +10,7 @@ let pipelineData = {
     "0.0.2": {
         model: "Xenova/GIST-small-Embedding-v0",
         model_url: `https://danielruss.github.io/soccer-models/clips_v0.0.2.onnx`,
+        model_version:"0.0.2",
         config: {
             dtype: "fp32",
             quantized: false,
@@ -33,6 +34,12 @@ export async function configureClips(version="0.0.2"){
 // has {products_services:"",sic1987:""} There can be unused keys.
 export async function runClipsPipeline(input_data,{n=10}={}){
     if (!input_data) throw new Error("No data to classify");
+    let metadata = {
+        start_time: new Date().toLocaleString(),
+        embedding_model: current_config.model,
+        clips_model: current_config.model_version        
+    }
+    console.log(metadata)
  
     // Step 1. check the data
     let {data,fields} = cleanData(input_data)
@@ -74,6 +81,10 @@ export async function runClipsPipeline(input_data,{n=10}={}){
         return res
     })
 
+    // Step 9: add metadata to the results
+    metadata.end_time=new Date().toLocaleString()
+    results.metadata = metadata;
+    
     return results
 }
 

@@ -37,7 +37,11 @@ export async function download_excel(results,{filename="clips.xlsx"}={}){
     // create an excel workbook
     let workbook = XLSX.utils.book_new();
     let sheet = XLSX.utils.json_to_sheet(aoo,{header})
-    XLSX.utils.book_append_sheet(workbook, sheet, "clips");
+    XLSX.utils.book_append_sheet(workbook,sheet,'clips results')
+
+    if (!workbook.Custprops) workbook.Custprops = {};
+    Object.entries(results.metadata).forEach( ([k,v])=> workbook.Custprops[k]=v)
+    console.log(workbook.Custprops,"\n",workbook)
 
     // download the file..
     XLSX.writeFile(workbook,filename)
