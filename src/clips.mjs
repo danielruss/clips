@@ -1,10 +1,14 @@
 import {embedData,init as pipelineInit} from './embed.mjs'
 import { Crosswalk, CodingSystem } from './crosswalk.mjs';
 import { device, ort } from './env.js';
-import { read_csv, read_excel, download_excel, download_csv } from './io.mjs';
+import { read_csv, read_excel, download_excel, download_csv, getFileIterator,
+    createOPFSWritableStream,writeResultsBlockToOPFS,closeOPFSStream,downloadResultsFromOPFS
+} from './io.mjs';
 
 export {Crosswalk, CodingSystem}
-export {read_csv, read_excel, download_excel, download_csv}
+export {read_csv, read_excel, download_excel, download_csv,getFileIterator,
+    createOPFSWritableStream,writeResultsBlockToOPFS,closeOPFSStream,downloadResultsFromOPFS
+}
 
 let pipelineData = {
     "0.0.2": {
@@ -23,21 +27,30 @@ let pipelineData = {
     }
 }
 
-let current_config=null;
 export async function configureClips(version="0.0.2"){
-    current_config = pipelineData['0.0.2'];
+    let current_config = {...pipelineData['0.0.2']};
     console.log(`configure_clips: ${JSON.stringify(current_config)}`)
     await pipelineInit(current_config)
+
+    // add the session to the current_config and return it...
+    let current_model = current_config.model_url;
+    current_model = await (await fetch(current_model)).arrayBuffer()
+    current_config.session= await ort.InferenceSession.create(current_model,{executionProviders: [device] })
+
+    return current_config
 }
 
 // the data is a json array where each line 
 // has {products_services:"",sic1987:""} There can be unused keys.
-export async function runClipsPipeline(input_data,{n=10}={}){
+export async function runClipsPipeline(input_data,current_config,{n=10}={}){
     if (!input_data) throw new Error("No data to classify");
+    if (!current_config) throw new Error("No clips configuration, did you forget to call or await configureClips? ");
+    if (!current_config?.session) throw new Error("There is no session in the current config!")
+        
     let metadata = {
         start_time: new Date().toLocaleString(),
         embedding_model: current_config.model,
-        clips_model: current_config.model_version        
+        clips_model: current_config.model_version,
     }
     console.log(metadata)
  
@@ -56,16 +69,14 @@ export async function runClipsPipeline(input_data,{n=10}={}){
     }
     const crosswalk_tensor = new ort.Tensor('float32',crosswalk_buffer, crosswalk_buffer.dims);
 
-    // Step 4. load the onnx model
-    let current_model = current_config.model_url;
-    current_model = await (await fetch(current_model)).arrayBuffer()
-    const session= await ort.InferenceSession.create(current_model,{executionProviders: [device] })
+    // the onnx model is loaded during configClips
+    // Step 4. run the onnx model
     const feeds = {
         embedded_input: embedding_tensor,
         crosswalked_inp: crosswalk_tensor
     }
     // Step 5. run the onnx model
-    let results = await session.run(feeds);
+    let results = await current_config.session.run(feeds);
 
     // Step 6. process the results.
     results = onnxResultToArray(results.naics2022_out)
@@ -84,15 +95,18 @@ export async function runClipsPipeline(input_data,{n=10}={}){
     // Step 9: add metadata to the results
     metadata.end_time=new Date().toLocaleString()
     results.metadata = metadata;
+    results.blockId = input_data?.meta?.blockId??0
     
     return results
 }
 
 function cleanData(data){
     let fields;
+    let initialLine = 0
 
     if ( Object.hasOwn(data,"data") && Object.hasOwn(data,"meta") && Object.hasOwn(data.meta,"fields")){
         fields = data.meta.fields
+        initialLine = data.meta?.lines
         data = data.data;
     } else {
         if (!Array.isArray(data)) data=[data];
@@ -109,7 +123,7 @@ function cleanData(data){
     },initial_object)
 
     if (!Object.hasOwn(cleanedData,"Id")){
-        cleanedData['Id'] = Array.from({length:cleanedData.length},(_,indx)=>`row-${Number(indx+1).toString().padStart(npad,"0")}`)
+        cleanedData['Id'] = Array.from({length:cleanedData.length},(_,indx)=>`row-${Number(initialLine+indx+1).toString().padStart(npad,"0")}`)
     }
     cleanedData['products_services'] = cleanedData['products_services'].map( ps => ps.toLowerCase())
 
