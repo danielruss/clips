@@ -2,11 +2,9 @@ let embedder;
 let embeddingConfig;
 
 export async function init(pipelineData){
-    console.log("... starting initialization embed.mjs")
     const { pipeline } = await import("@huggingface/transformers")
     embedder = await pipeline("feature-extraction",pipelineData.model,pipelineData.config)
     embeddingConfig = pipelineData.embeddingConfig;
-    console.log("... initialization complete embed.mjs")
 }
 
 

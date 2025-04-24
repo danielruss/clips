@@ -94,7 +94,6 @@ export class CodingSystem{
                 buffer[this.calcIndex(row,indices[row][col])] = 1;
             }
         }
-        //console.log(indices)
         return buffer
     }
 }

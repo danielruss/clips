@@ -74,7 +74,6 @@ export async function getFileIterator(file,config={}){
 async function excelFileIterator(file,{linesPerBlock=40}={}) {
     linesPerBlock=linesPerBlock??40;
 
-    console.log("in excel_input: ", file)
     let fileReader = new FileReader()
     let arrayBuffer = await readAsArrayBuffer(file)
     let workbook = XLSX.read(arrayBuffer);
@@ -124,10 +123,7 @@ function *excelBlockGenerator(worksheet,linesPerBlock=100){
 
 // CSV INPUT ...
 async function csvFileIterator(file,{chunkSize=5*1024}={}) {
-    console.log("in csv_input: ", file)
     let {lines,blocks} = await csvCountLines(file)
-    console.log(`# lines: ${lines} blocks:${blocks}`)
-
     let iterator = csvGenerator(file,blocks,lines,{maxQueueSize:10,chunkSize})
 
     return iterator
@@ -175,7 +171,6 @@ function csvGenerator(file, totalBlocks, totalLines, {maxQueueSize=10,chunkSize=
                 // Resume the parser if queue size drops below the threshold
                 if (queue.length < maxQueueSize && parserInstance) {
                     if (isParsingPaused){
-                        console.log(`Resuming parser @ ${new Date().toLocaleTimeString()}`)
                         isParsingPaused=false;
                     }
                     parserInstance.resume();                            
@@ -205,7 +200,6 @@ function csvGenerator(file, totalBlocks, totalLines, {maxQueueSize=10,chunkSize=
 
             // Pause parser if queue size exceeds the maximum
             if (queue.length >= maxQueueSize) {
-                console.log(`Pausing parser @ ${new Date().toLocaleTimeString()}`)
                 parser.pause();
                 isParsingPaused=true;
             }
@@ -218,7 +212,6 @@ function csvGenerator(file, totalBlocks, totalLines, {maxQueueSize=10,chunkSize=
         },
         complete: function () {
             queue.push(null)
-            console.log("Parsing complete!");
         }
     });
 
@@ -244,7 +237,6 @@ export async function download_excel(results,{filename="clips.xlsx"}={}){
 
     if (!workbook.Custprops) workbook.Custprops = {};
     Object.entries(results.metadata).forEach( ([k,v])=> workbook.Custprops[k]=v)
-    console.log(workbook.Custprops,"\n",workbook)
 
     // download the file..
     XLSX.writeFile(workbook,filename)
@@ -356,7 +348,6 @@ async function downloadOPFSFileAsExcel(filename,metadata) {
         header:true,
         skipEmptyLines:true,
         complete:function(results){
-            console.log(results.data)
             let workbook = XLSX.utils.book_new();
             let worksheet = XLSX.utils.json_to_sheet(results.data,{header:results.meta.fields})
             XLSX.utils.book_append_sheet(workbook,worksheet,"CLIPS results");

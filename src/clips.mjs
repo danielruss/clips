@@ -29,7 +29,6 @@ let pipelineData = {
 
 export async function configureClips(version="0.0.2"){
     let current_config = {...pipelineData['0.0.2']};
-    console.log(`configure_clips: ${JSON.stringify(current_config)}`)
     await pipelineInit(current_config)
 
     // add the session to the current_config and return it...
@@ -52,7 +51,6 @@ export async function runClipsPipeline(input_data,current_config,{n=10}={}){
         embedding_model: current_config.model,
         clips_model: current_config.model_version,
     }
-    console.log(metadata)
  
     // Step 1. check the data
     let {data,fields} = cleanData(input_data)
