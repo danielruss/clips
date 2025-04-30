@@ -4,9 +4,10 @@ import * as XLSX from 'xlsx/xlsx.mjs';
 function getArrayOfObjects(results){
     if (results.length == 0) return
     let header = results.input_fields.slice()
-    let k=results[0].naics2022.length;
+    let outputCodingSystemName = results.metadata.coding_system
+    let k=results[0][outputCodingSystemName].length;
     for (let indx=0;indx<k;indx++){
-        header.push(`naics2022_${indx+1}`,`title_${indx+1}`,`score_${indx+1}`)
+        header.push(`${outputCodingSystemName}_${indx+1}`,`title_${indx+1}`,`score_${indx+1}`)
     }
 
     // convert arrays to naics2022_1..naics2022_n, title_1..title_n, score_1..score_n
@@ -18,8 +19,8 @@ function getArrayOfObjects(results){
             return acc
         },{} )
         // all all n of the results...
-        job.naics2022.forEach( (code,indx) => {
-            wide_job[`naics2022_${indx+1}`]=code
+        job[outputCodingSystemName].forEach( (code,indx) => {
+            wide_job[`${outputCodingSystemName}_${indx+1}`]=code
             wide_job[`title_${indx+1}`]=job.title[indx]
             wide_job[`score_${indx+1}`]=job.score[indx]
         })

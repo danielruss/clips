@@ -1,6 +1,6 @@
 {
   "name": "@danielruss/clips",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "dependencies": {
     "@huggingface/transformers": "^3.4.1",
     "onnxruntime-node": "^1.21.0",

@@ -22,12 +22,12 @@ describe('CLIPS Test', () => {
     it('should code without a sic1987 code and match the python result', async function(){
         this.slow(2000)
         // version 0.0.2 is the default, but let's be verbose.
-        await configureClips("0.0.2")   
+        let config = await configureClips("0.0.2")   
         let data = [
             {id:"test-001",products_services:"made oils"},
             {id:"test-002",products_services:"watch repair"}
         ];
-        let res = await runClipsPipeline(data,{n:2})
+        let res = await runClipsPipeline(data,config,{n:2})
         console.log("check test-001 ......")
         checkCodes(res[0].naics2022,['31122','32599'])
         checkScores(res[0].score,[0.8217,0.1663])
@@ -39,12 +39,12 @@ describe('CLIPS Test', () => {
     it('should code with a sic1987 code and match the python result', async function(){
         this.slow(10000)
         // version 0.0.2 is the default, but let's be verbose.
-        await configureClips("0.0.2")   
+        let config = await configureClips("0.0.2")   
         let data = [
             {id:"test-001",products_services:"made oils",sic1987:"9999"},
             {id:"test-002",products_services:"watch repair",sic1987:"7631"}
         ];
-        let res = await runClipsPipeline(data,{n:2})
+        let res = await runClipsPipeline(data,config,{n:2})
         checkCodes(res[0].naics2022,['31122','32599'])
         checkScores(res[0].score,[0.8217,0.1663])     
         checkCodes(res[1].naics2022,['81149','81121'])

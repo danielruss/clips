@@ -5,7 +5,9 @@ import { read_csv, read_excel, download_excel, download_csv, getFileIterator,
     createOPFSWritableStream,writeResultsBlockToOPFS,closeOPFSStream,downloadResultsFromOPFS
 } from './io.mjs';
 
+export {embedData,pipelineInit}
 export {Crosswalk, CodingSystem}
+export {device,ort}
 export {read_csv, read_excel, download_excel, download_csv,getFileIterator,
     createOPFSWritableStream,writeResultsBlockToOPFS,closeOPFSStream,downloadResultsFromOPFS
 }
@@ -50,6 +52,7 @@ export async function runClipsPipeline(input_data,current_config,{n=10}={}){
         start_time: new Date().toLocaleString(),
         embedding_model: current_config.model,
         clips_model: current_config.model_version,
+        coding_system: "naics2022"
     }
  
     // Step 1. check the data
