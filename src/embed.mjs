@@ -3,8 +3,8 @@ let embeddingConfig;
 
 export async function init(pipelineData){
     const { pipeline } = await import("@huggingface/transformers")
-    embedder = await pipeline("feature-extraction",pipelineData.model,pipelineData.config)
-    embeddingConfig = pipelineData.embeddingConfig;
+    embedder = await pipeline("feature-extraction",pipelineData.model,pipelineData.pipeline_config);
+    embeddingConfig = pipelineData.embedding_config;
 }
 
 

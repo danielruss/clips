@@ -17,12 +17,12 @@ let pipelineData = {
         model: "Xenova/GIST-small-Embedding-v0",
         model_url: `https://danielruss.github.io/soccer-models/clips_v0.0.2.onnx`,
         model_version:"0.0.2",
-        config: {
+        pipeline_config: {
             dtype: "fp32",
             quantized: false,
             device: device,
         },
-        embeddingConfig: {
+        embedding_config: {
             pooling: "cls",
             normalize: true,
         }
@@ -30,7 +30,7 @@ let pipelineData = {
 }
 
 export async function configureClips(version="0.0.2"){
-    let current_config = {...pipelineData['0.0.2']};
+    let current_config = {...pipelineData[version]};
     await pipelineInit(current_config)
 
     // add the session to the current_config and return it...
@@ -113,7 +113,7 @@ function cleanData(data){
         if (!Array.isArray(data)) data=[data];
         fields = Object.keys(data[0])
     }
-    let npad=  Math.floor(Math.log10(data.length));
+    let npad=  Math.floor(Math.log10(data.length))+1;
     let initial_object = fields.reduce( (obj,key) => {obj[key]=[];return obj},{})
 
     // transpose the data to a column array.
