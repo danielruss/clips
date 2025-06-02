@@ -1,6 +1,6 @@
 import mocha from 'https://cdn.jsdelivr.net/npm/mocha@10.7.3/+esm'
 import { assert } from 'https://cdn.jsdelivr.net/npm/chai@5.1.1/+esm'
-import { configureClips,runClipsPipeline } from "../dist/browser/clips.js";
+import { configureClips,runClipsPipeline } from "https://cdn.jsdelivr.net/npm/@danielruss/clips@latest/+esm";
 
 function checkCodes(res,exp){
     assert.isArray(res,"the results should have a naics2022 array");
