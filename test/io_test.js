@@ -64,8 +64,8 @@ describe('Read XL', () => {
         let excelBlob = await (await fetch(url)).arrayBuffer() 
         let dta = await clips.read_excel(excelBlob)
 
-        await clips.configureClips()
-        let xlRes = await clips.runClipsPipeline(dta)
+        let config = await clips.configureClips()
+        let xlRes = await clips.runClipsPipeline(dta,config)
         updateTable("xlTable",xlRes)
         //download_excel(xlRes)
     })
@@ -77,8 +77,8 @@ describe('Read csv', () => {
         let excelBlob = await (await fetch(url)).blob() 
         let dta = await clips.read_csv(excelBlob)
 
-        await clips.configureClips()
-        let csvRes = await clips.runClipsPipeline(dta)
+        let config = await clips.configureClips()
+        let csvRes = await clips.runClipsPipeline(dta,config)
 
         updateTable("csvTable",csvRes)
         //clips.download_csv(csvRes)

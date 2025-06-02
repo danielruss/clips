@@ -11,4 +11,4 @@ export const device = IS_NODE_ENV ? "cpu":(IS_WEBGPU_AVAILABLE?"webgpu":"wasm");
 
 export const ort = IS_NODE_ENV ? await import('onnxruntime-node') : await import('onnxruntime-web')
 
-ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/'
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/'
