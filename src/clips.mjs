@@ -52,7 +52,9 @@ export async function runClipsPipeline(input_data,current_config,{n=10}={}){
         start_time: new Date().toLocaleString(),
         embedding_model: current_config.model,
         clips_model: current_config.model_version,
-        coding_system: "naics2022"
+        clips_model_url: current_config.model_url,
+        coding_system: "naics2022",
+        name:clips
     }
  
     // Step 1. check the data
