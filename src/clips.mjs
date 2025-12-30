@@ -54,7 +54,7 @@ export async function runClipsPipeline(input_data,current_config,{n=10}={}){
         clips_model: current_config.model_version,
         clips_model_url: current_config.model_url,
         coding_system: "naics2022",
-        name:clips
+        name:"CLIPS"
     }
  
     // Step 1. check the data

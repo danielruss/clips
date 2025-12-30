@@ -351,7 +351,7 @@ async function downloadOPFSFileAsExcel(filename,metadata) {
         complete:function(results){
             let workbook = XLSX.utils.book_new();
             let worksheet = XLSX.utils.json_to_sheet(results.data,{header:results.meta.fields})
-            XLSX.utils.book_append_sheet(workbook,worksheet,"CLIPS results");
+            XLSX.utils.book_append_sheet(workbook,worksheet,`${metadata.name} results`);
             if (!workbook.Custprops) workbook.Custprops={};
             Object.assign(workbook.Custprops,metadata)
             XLSX.writeFile(workbook,filename)
