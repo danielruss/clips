@@ -60,6 +60,7 @@ function updateTable(id,res){
 mocha.setup('bdd');
 describe('Read XL', () => {
     it('it should read an excel file', async function(){
+        //this.timeout(5000); // 5 seconds for this specific test
         let url = "../dev/dev_data.xlsx"
         let excelBlob = await (await fetch(url)).arrayBuffer() 
         let dta = await clips.read_excel(excelBlob)
@@ -72,6 +73,7 @@ describe('Read XL', () => {
 })
 
 describe('Read csv', () => {
+    //this.timeout(5000); // 5 seconds for this specific test
     it('it should read an csv file', async function(){
         let url = "../dev/dev_data.csv"
         let excelBlob = await (await fetch(url)).blob() 

@@ -20,7 +20,9 @@
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
+    "chai": "^6.2.2",
     "esbuild": "^0.25.2",
+    "mocha": "^11.3.0",
     "rollup": "^4.39.0"
   }
 }

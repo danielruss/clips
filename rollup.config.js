@@ -42,6 +42,12 @@ export default [
         dynamicRequireTargets: ['../bin/napi-v3/**/*'],
         ignoreDynamicRequires: false, // Process dynamic requires
       }),
+      copy({
+        targets:[
+          {src: 'data/*.json',dest: 'data'}
+        ],
+        hook: 'writeBundle'
+      }),
       terser(),
     ],
     external: ['@huggingface/transformers','onnxruntime-node'],

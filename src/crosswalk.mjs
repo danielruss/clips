@@ -1,21 +1,47 @@
-const baseURL="https://danielruss.github.io/codingsystems"
-const knownCodingSystemInfo = new Map([
-    ["soc2010",{url:`${baseURL}/soc2010_all.json`,level:6,filter:{key:"soc2d",value:"99-0000"}}],
-    ["naics2022",{url:`${baseURL}/naics2022_all.json`,level:5,filter:{key:"naics2d",value:"99"}}]
-])
+const IS_NODE_ENV = typeof process !== 'undefined' && process?.release?.name === 'node';
+async function readOrFetchJSONFile(filename){
+    
+    if (IS_NODE_ENV){
+        const fs = await import('fs/promises');
+        const path = (await import('path')).default;
+        const { fileURLToPath } = await import('url')
+        
+        const dirname = path.dirname(fileURLToPath(import.meta.url));
+        const localPath = path.resolve(dirname, 'data', filename);
+
+        console.log(`fetching... ${localPath}`)
+        const data = await fs.readFile(localPath, 'utf8');
+        return JSON.parse(data);
+    } else {
+        const remoteURL = `https://danielruss.github.io/codingsystems/${filename}`
+        console.log(`fetching... ${remoteURL}`)
+        return await (await fetch(remoteURL)).json();
+    }
+}
 
 
-const knownCrosswalkURLs = new Map([
-    ["soc2010", new Map([
-        ["soc1980", `${baseURL}/soc1980_soc2010.json`],
-        ["noc2011", `${baseURL}/noc2011_soc2010_via_soc2018.json`],
-        ["isco1988", `${baseURL}/isco1988_soc2010.json`]
-    ])],
-    ["naics2022", new Map([
-        ["sic1987", `${baseURL}/sic1987_naics2022_5d.json`]
-    ])]
-])
+function buildCodingSystemInfo(){
+    return new Map([
+        ["soc2010",{url:`soc2010_all.json`,level:6,filter:{key:"soc2d",value:"99-0000"}}],
+        ["naics2022",{url:`naics2022_all.json`,level:5,filter:{key:"naics2d",value:"99"}}]
+    ])
+}
 
+function buildKnownCrosswalkURLs(){
+    return new Map([
+        ["soc2010", new Map([
+            ["soc1980", `soc1980_soc2010.json`],
+            ["noc2011", `noc2011_soc2010_via_soc2018.json`],
+            ["isco1988", `isco1988_soc2010.json`]
+        ])],
+        ["naics2022", new Map([
+            ["sic1987", `sic1987_naics2022_5d.json`]
+        ])]
+    ])
+} 
+
+let knownCodingSystemInfo = buildCodingSystemInfo();
+let knownCrosswalkURLs = buildKnownCrosswalkURLs();
 
 export class CodingSystem{
     static cachedCodingSystems = new Map();
@@ -28,7 +54,7 @@ export class CodingSystem{
             throw new Error(`Unknown coding system: ${system} `)
         }
         let info = knownCodingSystemInfo.get(system)
-        let codes  = await (await fetch(info.url)).json()
+        let codes  = await readOrFetchJSONFile(info.url);
         codes = codes.filter((code)=> (code.Level == info.level) && (code[info.filter.key] != info.filter.value) )
         let codeMap = codes.reduce( (acc,code,indx)=>{
             acc.set(code.code,indx)
@@ -114,7 +140,7 @@ export class Crosswalk {
             throw new Error(`No Crosswalks from ${from} to ${to} `)
         }
         let url = toMap.get(from);
-        let xw_data  = await (await fetch(url)).json()
+        let xw_data  = await readOrFetchJSONFile(url);
         let crosswalk = xw_data.reduce( (acc,cv) => {
             if (!acc.has(cv[from].toString())) {
                 acc.set(cv[from].toString(),[])
