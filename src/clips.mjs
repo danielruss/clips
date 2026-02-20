@@ -30,12 +30,32 @@ let pipelineData = {
 }
 
 export async function configureClips(version="0.0.2"){
+    const USE_LOCAL = typeof process !== 'undefined' && 
+        process?.release?.name === 'node' && 
+        process?.env?.CLIPS_URL;
+
     let current_config = {...pipelineData[version]};
+    let current_model;
+    if (USE_LOCAL){
+        console.log(`loading model file: ${process.env.CLIPS_URL}`);
+        const { existsSync } = await import('fs');
+        if (!existsSync(process.env.CLIPS_URL)){
+            console.error(`ERROR: The CLIPS model file, ${process.env.CLIPS_URL}, does not exist.`);
+            process.exit(1);
+        }
+        const { readFile } = await import('fs/promises');
+        current_model = await readFile(process.env.CLIPS_URL);
+        current_model = Uint8Array.from(current_model).buffer;
+        current_config.model_url = process.env.CLIPS_URL
+    } else {
+        current_model = current_config.model_url;
+        console.log(`fetching the clips model: ${current_model}`)
+        current_model = await (await fetch(current_model)).arrayBuffer()
+    }
     await pipelineInit(current_config)
 
     // add the session to the current_config and return it...
-    let current_model = current_config.model_url;
-    current_model = await (await fetch(current_model)).arrayBuffer()
+    current_model = current_config.model_url;
     current_config.session= await ort.InferenceSession.create(current_model,{executionProviders: [device] })
 
     return current_config
@@ -47,7 +67,7 @@ export async function runClipsPipeline(input_data,current_config,{n=10}={}){
     if (!input_data) throw new Error("No data to classify");
     if (!current_config) throw new Error("No clips configuration, did you forget to call or await configureClips? ");
     if (!current_config?.session) throw new Error("There is no session in the current config!")
-        
+
     let metadata = {
         start_time: new Date().toLocaleString(),
         embedding_model: current_config.model,

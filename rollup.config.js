@@ -2,6 +2,7 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import copy from '@rollup-extras/plugin-copy';
+import path from 'path';
 
 export default [
   {
@@ -15,12 +16,11 @@ export default [
       nodeResolve({
         browser: true, // Resolve browser-specific modules
       }),
-      commonjs(),
-      terser(), // Minify the output in production mode
+      commonjs(), //terser(), // Minify the output in production mode
       copy({
         targets: [
           {
-            src: 'node_modules/onnxruntime-web/dist/*.wasm',
+            src: 'node_modules/@huggingface/transformers/dist/*.{wasm,mjs}',
             dest: './'
           }
         ]
@@ -48,7 +48,7 @@ export default [
         ],
         hook: 'writeBundle'
       }),
-      terser(),
+      
     ],
     external: ['@huggingface/transformers','onnxruntime-node'],
   }

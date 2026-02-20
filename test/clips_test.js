@@ -1,6 +1,6 @@
 import mocha from 'https://cdn.jsdelivr.net/npm/mocha@10.7.3/+esm'
 import { assert } from 'https://cdn.jsdelivr.net/npm/chai@5.1.1/+esm'
-import { configureClips,runClipsPipeline } from "https://cdn.jsdelivr.net/npm/@danielruss/clips@latest/+esm";
+import { configureClips,runClipsPipeline } from "../dist/browser/clips.js";
 
 function checkCodes(res,exp){
     assert.isArray(res,"the results should have a naics2022 array");
@@ -20,7 +20,7 @@ function checkScores(res,exp){
 mocha.setup('bdd');
 describe('CLIPS Test', () => {
     it('should code without a sic1987 code and match the python result', async function(){
-        this.slow(2000)
+        this.slow(10000)
         // version 0.0.2 is the default, but let's be verbose.
         let config = await configureClips("0.0.2")   
         let data = [

@@ -7,7 +7,11 @@ async function readOrFetchJSONFile(filename){
         const { fileURLToPath } = await import('url')
         
         const dirname = path.dirname(fileURLToPath(import.meta.url));
-        const localPath = path.resolve(dirname, 'data', filename);
+        // rollup puts the data in dist/node/data
+        // I put the data in src/data
+        const localPath = dirname.endsWith("node")
+            ? path.resolve(dirname,'data',filename)
+            : path.resolve(dirname,"..","data",filename)
 
         console.log(`fetching... ${localPath}`)
         const data = await fs.readFile(localPath, 'utf8');

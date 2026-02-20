@@ -1,5 +1,8 @@
 import { assert } from 'chai';
-import { configureClips,runClipsPipeline } from "../dist/node/clips.js"
+import { configureClips,runClipsPipeline } from "../src/clips.mjs"
+
+import { existsSync } from 'node:fs';
+
 
 function checkCodes(res,exp){
     assert.isArray(res,"the results should have a naics2022 array");
@@ -17,8 +20,8 @@ function checkScores(res,exp){
 }
 
 describe('CLIPS Test', () => {
+/*    
     let optional_config={};
-
     before( function(){
         if (process.env.CLIPS_URL){
             if (!existsSync(process.env.CLIPS_URL)){
@@ -31,9 +34,9 @@ describe('CLIPS Test', () => {
             console.log("... By the way.  You did not define the environment varible CLIPS_URL.  This will use the model located online.")
         }
     });
-
+*/
     it('should code without a sic1987 code and match the python result', async function(){
-        let config = await configureClips("0.0.2",optional_config)
+        let config = await configureClips("0.0.2")
         let data = [
             {id:"test-001",products_services:"made oils"},
             {id:"test-002",products_services:"watch repair"}
@@ -49,7 +52,7 @@ describe('CLIPS Test', () => {
 
     it('should code with a sic1987 code and match the python result', async function(){
         // version 0.0.2 is the default, but let's be verbose.
-        let config = await configureClips("0.0.2",optional_config)
+        let config = await configureClips("0.0.2")
         let data = [
             {id:"test-001",products_services:"made oils",sic1987:"9999"},
             {id:"test-002",products_services:"watch repair",sic1987:"7631"}

@@ -3,17 +3,27 @@
   "version": "0.0.13",
   "dependencies": {
     "@huggingface/transformers": "^3.4.1",
-    "onnxruntime-node": "^1.21.0",
-    "onnxruntime-web": "^1.21.0",
+    "onnxruntime-node": "^1.24.2",
+    "onnxruntime-web": "^1.24.2",
     "papaparse": "^5.5.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "type": "module",
   "main": "dist/node/clips.js",
-  "module": "dist/browser/clips.js",
+  "bin": {
+    "cache-embedding-model": "./scripts/cache-model.js"
+  },
+  "exports": {
+    ".": {
+      "browser": "./dist/browser/clips.js",
+      "node":  "./dist/node/clips.js",
+      "default": "./dist/node/clips.js"
+    }
+  },
   "scripts": {
     "dev": "node index.js",
-    "build": "./node_modules/.bin/rollup -c"
+    "build": "rollup -c",
+    "cache": "node scripts/cache-model.js"
   },
   "devDependencies": {
     "@rollup-extras/plugin-copy": "^1.11.0",
@@ -24,5 +34,12 @@
     "esbuild": "^0.25.2",
     "mocha": "^11.3.0",
     "rollup": "^4.39.0"
+  },
+  "overrides": {
+    "glob": "^13.0.3",
+    "minimatch": "^10.2.1",
+    "diff": "^8.0.3",
+    "onnxruntime-node": "^1.24.2",
+    "onnxruntime-web": "^1.24.2"
   }
 }
